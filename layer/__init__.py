@@ -5,7 +5,7 @@ from .embedding_layer import (
     CheckinEmbedding,
     EdgeEmbedding
 )
-from .Spatial-temporal_encoder import (
+from .spatial-temporal_encoder import (
     PositionEncoder,
     TimeEncoder,
     DistanceEncoderHSTLSTM,
