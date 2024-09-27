@@ -156,8 +156,6 @@ def generate_traj2traj_data(
 ):
 
     traj2traj_original_metric = None
-    # First create sparse matrix for trajectory -> poi, then generate inter-user adjacency list
-    # one trajectory may have multiple identical poi_id, we drop the duplicate ones first
     traj_user_map = data[['UserId', traj_column]].drop_duplicates().set_index(traj_column)
     traj_size_adjust = None
     if relation_type == 'inter':
