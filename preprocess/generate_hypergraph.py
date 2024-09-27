@@ -13,7 +13,6 @@ import logging
 
 
 def generate_hypergraph_from_file(input_file, output_path, args):
-
     usecols = [
         'UserId', 'PoiId', 'PoiCategoryId', 'Latitude', 'Longitude', 'UTCTimeOffsetEpoch', 'UTCTimeOffsetWeekday',
         'UTCTimeOffsetHour', 'check_ins_id', 'pseudo_session_trajectory_id'
