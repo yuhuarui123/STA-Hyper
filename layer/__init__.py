@@ -1,11 +1,11 @@
-from .conv import HypergraphTransformer
+from .attention import HypergraphTransformer
 from .sampler import NeighborSampler
 from .embedding_layer import (
     CommonEmbedding,
     CheckinEmbedding,
     EdgeEmbedding
 )
-from .st_encoder import (
+from .Spatial-temporal_encoder import (
     PositionEncoder,
     TimeEncoder,
     DistanceEncoderHSTLSTM,
