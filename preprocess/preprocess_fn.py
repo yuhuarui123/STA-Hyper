@@ -10,13 +10,6 @@ def id_encode(
         column: str,
         padding: int = -1
 ) -> Tuple[LabelEncoder, int]:
-    """
-    :param fit_df: 只考虑编码df中的数据来构造LabelEncoder实例
-    :param encode_df: 使用构造的LabelEncoder实例对其值进行编码的数据框架
-    :param column: 要编码的列
-    :param padding:
-    :return:
-    """
     id_le = LabelEncoder()
     id_le = id_le.fit(fit_df[column].values.tolist())
     if padding == 0:
@@ -35,9 +28,6 @@ def id_encode(
 
 
 def ignore_first(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    忽略每个轨迹的第一个签入样本，因为没有历史签入。
-    """
     df['pseudo_session_trajectory_rank'] = df.groupby(
         'pseudo_session_trajectory_id')['UTCTimeOffset'].rank(method='first')
     df['query_pseudo_session_trajectory_id'] = df['pseudo_session_trajectory_id'].shift()
@@ -50,9 +40,7 @@ def ignore_first(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def only_keep_last(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    在验证和测试中只保留最后签入的样本，以测量模型的性能。
-    """
+
     df['pseudo_session_trajectory_count'] = df.groupby(
         'pseudo_session_trajectory_id')['UTCTimeOffset'].transform('count')
     df.loc[(df['SplitTag'] == 'validation') & (
@@ -65,9 +53,7 @@ def only_keep_last(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def remove_unseen_user_poi(df: pd.DataFrame) -> Dict:
-    """
-    如果poi或Users没有出现在训练样本中，则删除Validate和Test的样本
-    """
+
     preprocess_result = dict()
     df_train = df[df['SplitTag'] == 'train']
     df_validate = df[df['SplitTag'] == 'validation']
