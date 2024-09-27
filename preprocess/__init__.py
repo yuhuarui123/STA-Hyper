@@ -1,4 +1,4 @@
-from preprocess.generate_hypergraph import (
+from preprocess.hypergraph_construction import (
     generate_hypergraph_from_file,
     generate_hyperedge_stat,
     generate_traj2traj_data,
