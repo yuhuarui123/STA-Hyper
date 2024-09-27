@@ -13,25 +13,7 @@ import logging
 
 
 def generate_hypergraph_from_file(input_file, output_path, args):
-    """
-    构造[Checkin -> Trajectory]关联矩阵和[Trajectory -> Trajectory]邻接列表从原始记录来看，edge_index是这样的
-        [[ -CheckIn- ]
-         [ -Trajectory(hyperedge)]
-    and
-        [[ -Trajectory(hyperedge)- ]
-         [ -Trajectory(hyperedge)]
-    separately.
 
-    在下一个点任务中使用txt文件中的列:
-        UserId, check_ins_id, PoiId, Latitude, Longitude, PoiCategoryId, UTCTimeOffsetEpoch,
-        pseudo_session_trajectory_id, UTCTimeOffsetWeekday, UTCTimeOffsetHour.
-
-    这两部分将保存为两个.pt文件。
-    :param input_file: the hypergraph raw path
-    :param output_path: pyg_data.pt output directory
-    :param args: parameters parsed for input
-    :return: None
-    """
     usecols = [
         'UserId', 'PoiId', 'PoiCategoryId', 'Latitude', 'Longitude', 'UTCTimeOffsetEpoch', 'UTCTimeOffsetWeekday',
         'UTCTimeOffsetHour', 'check_ins_id', 'pseudo_session_trajectory_id'
@@ -42,8 +24,6 @@ def generate_hypergraph_from_file(input_file, output_path, args):
 
     traj_column = 'pseudo_session_trajectory_id'
 
-    # If True, Shift traj_id with offset #check_ins_id before saving to pyg data, which means idx of checkin are
-    # in range [0, #checkin_id - 1], and idx of trajectory are in range [#checkin, #trajectory+#checkin-1]
     traj_offset = True
     if traj_offset:
         checkin_offset = torch.as_tensor([data.check_ins_id.max() + 1], dtype=torch.long)
@@ -87,13 +67,7 @@ def generate_hypergraph_from_file(input_file, output_path, args):
 
 
 def generate_hyperedge_stat(data, traj_column):
-    """
-    生成轨迹超边缘统计数据(pd.DataFrame),每条轨迹的大小、平均经纬度、起始和结束时间等
 
-    :param data: raw pseudo-session trajectory data
-    :param traj_column: trajectory column name
-    :return:
-    """
     traj_stat = pd.DataFrame()
     traj_stat['size'] = data.groupby(traj_column)['UTCTimeOffsetEpoch'].apply(len)
     traj_stat['mean_lon'] = data.groupby(traj_column)['Longitude'].apply(sum) / traj_stat['size']
@@ -119,17 +93,7 @@ def generate_hyperedge_stat(data, traj_column):
 
 
 def generate_ci2traj_pyg_data(data, traj_stat, traj_column, checkin_offset):
-    """
-    生成签到到轨迹的关联矩阵和签到特征矩阵，并计算时间和空间的边属性，然后将这些数据存储在 PyG 数据对象中.
-    edge_delta_t is calculated by (traj(max_time) - current_time)
-    edge_delta_s is calculated by (geodis(traj(last_lbs), current_lbs))
 
-    :param data: raw trajectory data;
-    :param traj_stat: hyperedge(trajectory) statistics;
-    :param traj_column: trajectory column name;
-    :param checkin_offset: max checkin index plus 1;
-    :return: pyg_data including incidence matrix and checkin feature matrix and other edge information.
-    """
     checkin_feature_columns = [
         'UserId',
         'PoiId',
@@ -190,18 +154,7 @@ def generate_traj2traj_data(
         chunk_num=10,
         relation_type='intra'
 ):
-    """
-    生成轨迹到轨迹的动态关系矩阵，包括同一用户轨迹之间的关系（intra）和不同用户轨迹之间的关系（inter）。
 
-    :param data: raw trajectory data;
-    :param traj_stat: hyperedge(trajectory) statistics;
-    :param traj_column: trajectory column name;
-    :param threshold: threshold for filtering noise relation;
-    :param filter_mode: filter mode for filtering noise relation;
-    :param chunk_num: number of chunk for fast filtering.
-    :param relation_type: intra or inter, switch for different type of hyperedge2hyperedge relation.
-    :return: hyperedge2hyperedge tuple data(edge_index(coo), edge_type, edge_delta_t and edge_delta_s.
-    """
     traj2traj_original_metric = None
     # First create sparse matrix for trajectory -> poi, then generate inter-user adjacency list
     # one trajectory may have multiple identical poi_id, we drop the duplicate ones first
@@ -293,17 +246,7 @@ def generate_traj2traj_data(
 
 
 def merge_traj2traj_data(traj_stat, intra_u_data, inter_u_data, checkin_offset):
-    """
-    将同一用户和不同用户之间的轨迹关系数据合并为一个 PyG 数据对象
 
-    :param traj_stat: hyperedge(trajectory) statistics;
-    :param intra_u_data: hyperedge2hyperedge(traj2traj) relation between the same user, composited of tuple with
-        edge_index(coo), edge_attr(np.array), edge_type(np.array), edge_delta_t(np.array), edge_delta_s(np.array);
-    :param inter_u_data: hyperedge2hyperedge(traj2traj) relation between different users, composited of tuple like
-        intra_u_data.
-    :param checkin_offset: max checkin index plus 1;
-    :return: pyg data of traj2traj
-    """
     traj_feature = traj_stat[['size', 'mean_lon', 'mean_lat', 'mean_time', 'start_time', 'end_time']].to_numpy()
 
     # 添加两个额外的特征列，以确保traj特征与ci特征具有相同的维度大小
@@ -355,20 +298,7 @@ def merge_traj2traj_data(traj_stat, intra_u_data, inter_u_data, checkin_offset):
 
 
 def filter_chunk(row, col, data, he_size, chunk_num=10, threshold=0.02, filter_mode='min size'):
-    """
-    基于某个度量阈值对轨迹间的关系进行过滤，移除噪声连接。
 
-    :param row: row, hyperedge2hyperedge scipy.sparse coo matrix
-    :param col: col, hyperedge2hyperedge scipy.sparse coo matrix
-    :param data: data, hyperedge2hyperedge scipy.sparse coo matrix
-    :param he_size: hyperedge size list (drop duplicates)
-    :param chunk_num: number of chunk to prevent from oom issue
-    :param threshold: metric threshold, relation will be kept only if metric value is greater than threshold
-    :param filter_mode: min_size - propotional to minmum size, 'jaccard' - jaccard similarity
-        min_size, E2E_{ij} keeps when E2E_{ij} \ge \theta\min(|\mathcal{E}_i|,|\mathcal{E}_j|)
-        jaccard, E2E_{ij} keeps when \frac{E2E_{ij}}{|\mathcal{E}_i|+|\mathcal{E}_j| - E2E_{ij}} \ge \theta
-    :return:
-    """
     # 对于大数据，将数据拆分为多个块
     chunk_bin = np.linspace(0, row.shape[0], chunk_num, dtype=np.int64)
     rows, cols, datas = [], [], []
