@@ -8,7 +8,7 @@ from preprocess.hypergraph_construction import (
 )
 
 
-from preprocess.preprocess_fn import (
+from preprocess.methods import (
     remove_unseen_user_poi,
     id_encode,
     ignore_first,
