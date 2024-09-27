@@ -14,17 +14,13 @@ from preprocess.methods import (
     ignore_first,
     only_keep_last
 )
-from preprocess.file_reader import (
-    FileReaderBase,
-    FileReader
-)
+
 from preprocess.preprocess_main import (
     preprocess
 )
 
 __all__ = [
     "FileReaderBase",
-    "FileReader",
     "generate_hypergraph_from_file",
     "generate_hyperedge_stat",
     "generate_traj2traj_data",
